@@ -271,16 +271,16 @@ void draw_perf_pipijpsi(
 	  particle = "mu";
   }
  
-  cs1d[0]->SaveAs(Form("STCF_pipijpsi_ckf_truthMatchProb.0.8_%s_trackPurity_1d.pdf", particle.c_str())); 
+  cs1d[0]->SaveAs(Form("STCF_pipijpsi_ckf_%s_trackPurity_1d.pdf", particle.c_str())); 
   for (int i = 0; i < nTrackFiles; ++i) {
     cs2d[0+9*i]->SaveAs(Form("STCF_pipijpsi_seeding_%s_eff_2d_%i.pdf", particle.c_str(), i));
     cs2d[1+9*i]->SaveAs(Form("STCF_pipijpsi_seeding_%s_nDuplicated_2d_%i.pdf", particle.c_str(), i));
-    cs2d[2+9*i]->SaveAs(Form("STCF_pipijpsi_ckf_truthMatchProb.0.8_%s_eff_2d_%i.pdf", particle.c_str(), i));
-    cs2d[3+9*i]->SaveAs(Form("STCF_pipijpsi_ckf_truthMatchProb.0.8_%s_fakerate_2d_%i.pdf", particle.c_str(), i));
-    cs2d[4+9*i]->SaveAs(Form("STCF_pipijpsi_ckf_truthMatchProb.0.8_%s_duplirate_2d_%i.pdf", particle.c_str(), i));
-    cs2d[5+9*i]->SaveAs(Form("STCF_pipijpsi_ckf_truthMatchProb.0.8_%s_nMeasurements_2d_%i.pdf", particle.c_str(), i));
-    cs2d[6+9*i]->SaveAs(Form("STCF_pipijpsi_ckf_truthMatchProb.0.8_%s_nMajorityHits_2d_%i.pdf", particle.c_str(), i));
-    cs2d[7+9*i]->SaveAs(Form("STCF_pipijpsi_ckf_truthMatchProb.0.8_%s_nDuplicated_2d_%i.pdf", particle.c_str(), i));
-    cs2d[8+9*i]->SaveAs(Form("STCF_pipijpsi_ckf_truthMatchProb.0.8_%s_trackPurity_2d_%i.pdf", particle.c_str(), i));
+    cs2d[2+9*i]->SaveAs(Form("STCF_pipijpsi_ckf_%s_eff_2d_%i.pdf", particle.c_str(), i));
+    cs2d[3+9*i]->SaveAs(Form("STCF_pipijpsi_ckf_%s_fakerate_2d_%i.pdf", particle.c_str(), i));
+    cs2d[4+9*i]->SaveAs(Form("STCF_pipijpsi_ckf_%s_duplirate_2d_%i.pdf", particle.c_str(), i));
+    cs2d[5+9*i]->SaveAs(Form("STCF_pipijpsi_ckf_%s_nMeasurements_2d_%i.pdf", particle.c_str(), i));
+    cs2d[6+9*i]->SaveAs(Form("STCF_pipijpsi_ckf_%s_nMajorityHits_2d_%i.pdf", particle.c_str(), i));
+    cs2d[7+9*i]->SaveAs(Form("STCF_pipijpsi_ckf_%s_nDuplicated_2d_%i.pdf", particle.c_str(), i));
+    cs2d[8+9*i]->SaveAs(Form("STCF_pipijpsi_ckf_%s_trackPurity_2d_%i.pdf", particle.c_str(), i));
   }
 }

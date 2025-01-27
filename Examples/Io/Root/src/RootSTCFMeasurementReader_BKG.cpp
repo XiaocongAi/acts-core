@@ -256,8 +256,8 @@ ActsExamples::ProcessCode ActsExamples::RootSTCFMeasurementReader_BKG::read(
     // I. read sim hits
     /////////////////////////////////////////////////////////////////////////////////////////////////
     if (m_simhit_treeReader->Next()) {
-      std::cout << "Reading event " << m_evtCounter++ << std::endl;
-      // int nParticles = 0;
+      // std::cout << "Reading event " << m_evtCounter++ << std::endl;
+      //  int nParticles = 0;
       int nITKHits = 0;
       int nMDCHits = 0;
       // The index of the sim hit among all the sim hits from this particle
@@ -278,6 +278,7 @@ ActsExamples::ProcessCode ActsExamples::RootSTCFMeasurementReader_BKG::read(
         int type = (*ITKtype)[i];
         // std::cout<<"ITK type is :"<<type<<std::endl;
         int particleId = (*ITKparticleId)[i];
+        // std::cout<<"particleId = " << particleId << std::endl;
         bool isNoiseHit = (type == -1);
         // Reset the noise particle index to -1
         if (isNoiseHit) {
@@ -565,8 +566,8 @@ ActsExamples::ProcessCode ActsExamples::RootSTCFMeasurementReader_BKG::read(
         const auto sourceLink_ = sourceLinks.nth(i);
         auto geoId_ = sourceLink_->get().geometryId();
       }
-      std::cout << "nITKHits = " << nITKHits << ", nMDCHits = " << nMDCHits
-                << std::endl;
+      // std::cout << "nITKHits = " << nITKHits << ", nMDCHits = " << nMDCHits
+      //          << std::endl;
     }  // Finish reading sim hits and transform them into measurements
 
     /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -580,7 +581,7 @@ ActsExamples::ProcessCode ActsExamples::RootSTCFMeasurementReader_BKG::read(
         if (particleITKSigHitIdx[i] < 3) {
           continue;
         };
-        nParticles++;
+
         int oncelayer = 0;
         int secondlayer = 0;
         int thirdlayer = 0;
@@ -609,6 +610,15 @@ ActsExamples::ProcessCode ActsExamples::RootSTCFMeasurementReader_BKG::read(
                           (*particleVertexZ)[i]);
         Acts::Vector3 mom((*particleMomentumX)[i], (*particleMomentumY)[i],
                           (*particleMomentumZ)[i]);
+        // Get particle costheta
+        auto theta = Acts::VectorHelpers::theta(mom);
+        if (std::abs(std::cos(theta)) > m_cfg.absCosThetaCut) {
+          continue;
+        }
+
+        // require mu
+        // if(std::abs((*particlePDG)[i]) != 13) continue;
+
         double charge = 0;
         if ((*particlePDG)[i] == 13 or (*particlePDG)[i] == 11 or
             (*particlePDG)[i] == -211 or (*particlePDG)[i] == -2212) {
@@ -635,15 +645,25 @@ ActsExamples::ProcessCode ActsExamples::RootSTCFMeasurementReader_BKG::read(
                                                mom.z() * mom.z()) *
                                      Acts::UnitConstants::GeV);
         unordered_particles.push_back(std::move(particle));
+
+        int particleIndex = particle.particleId().subParticle();
+        // if(particleHitIdx[particleIndex] < 30) continue;
+        nParticles++;
       }
 
-      for (const auto& [particleIndex, nHits] : particleHitIdx) {
-        std::cout << "particle " << particleIndex << " has " << nHits
-                  << " nHits"
-                  << ", nITKSigHits = " << particleITKSigHitIdx[particleIndex]
-                  << std::endl;
+      // std::cout << "There are " << nParticles << " selected particles " <<
+      // std::endl;
+      for (const auto& particle : unordered_particles) {
+        // for (const auto& [particleIndex, nHits] : particleHitIdx) {
+        int particleIndex = particle.particleId().subParticle();
+        // std::cout << "particle " << particleIndex << " has " <<
+        // particleHitIdx[particleIndex]
+        //           << " nHits"
+        //           << ", nITKSigHits = " <<
+        //           particleITKSigHitIdx[particleIndex] <<", nITKAllHits = " <<
+        //           particleITKAllHitIdx[particleIndex]
+        //           << std::endl;
       }
-      std::cout << "nParticles = " << nParticles << std::endl;
     }
 
     // Write the collections to the EventStore

@@ -61,6 +61,8 @@ class RootSTCFMeasurementReader_BKG : public IReader {
     // std::string treeName = "events";  ///< name of the input tree
     // std::string filePath;                   ///< The name of the input file
     std::vector<std::string> v_filePath;  ///< The name of the input file
+    /// The particle absCosTheta cut;
+    double absCosThetaCut = 0.935;
     /// Whether the events are ordered or not
     bool orderedEvents = true;
     /// Whether ignore noise hits when reading

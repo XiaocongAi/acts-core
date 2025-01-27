@@ -144,6 +144,8 @@ ActsExamples::ProcessCode ActsExamples::TrackFitterPerformanceWriter::writeT(
       continue;
     }
 
+    size_t nMajorityHits = particleHitCounts.front().hitCount;
+
     // Record this majority particle ID of this trajectory
     reconParticleIds.push_back(ip->particleId());
     // Fill the residual plots
@@ -153,10 +155,10 @@ ActsExamples::ProcessCode ActsExamples::TrackFitterPerformanceWriter::writeT(
     auto trajState =
         Acts::MultiTrajectoryHelpers::trajectoryState(mj, trackTip);
     // Fill the trajectory summary info
-    m_trackSummaryPlotTool.fill(m_trackSummaryPlotCache, fittedParameters,
-                                trajState.nStates, trajState.nMeasurements,
-                                trajState.nOutliers, trajState.nHoles,
-                                trajState.nSharedHits);
+    m_trackSummaryPlotTool.fill(
+        m_trackSummaryPlotCache, fittedParameters, ip->pdg(), trajState.nStates,
+        trajState.nMeasurements, nMajorityHits, trajState.nOutliers,
+        trajState.nHoles, trajState.nSharedHits);
   }
 
   // Fill the efficiency, defined as the ratio between number of tracks with

@@ -67,6 +67,7 @@ ActsExamples::RootTrajectorySummaryWriter::RootTrajectorySummaryWriter(
     m_outputTree->Branch("event_nr", &m_eventNr);
     m_outputTree->Branch("multiTraj_nr", &m_multiTrajNr);
     m_outputTree->Branch("subTraj_nr", &m_subTrajNr);
+    m_outputTree->Branch("seedIndex", &m_seedIndex);
 
     m_outputTree->Branch("nStates", &m_nStates);
     m_outputTree->Branch("nMeasurements", &m_nMeasurements);
@@ -181,6 +182,9 @@ ActsExamples::ProcessCode ActsExamples::RootTrajectorySummaryWriter::writeT(
     // The trajectory index
     m_multiTrajNr.push_back(itraj);
 
+    // The seed index
+    m_seedIndex.push_back(traj.seedIndex());
+
     // The trajectory entry indices and the multiTrajectory
     const auto& mj = traj.multiTrajectory();
     const auto& trackTips = traj.tips();
@@ -275,7 +279,8 @@ ActsExamples::ProcessCode ActsExamples::RootTrajectorySummaryWriter::writeT(
           ACTS_DEBUG(
               "Find the truth particle with barcode = " << majorityParticleId);
           majorityParticlePdg = particle.pdg();
-          // Get the truth particle info at vertex
+          // std::cout<<"pdg =  " << majorityParticlePdg << std::endl;
+          //  Get the truth particle info at vertex
           t_p = particle.absoluteMomentum();
           t_charge = particle.charge();
           t_time = particle.time();
@@ -315,6 +320,7 @@ ActsExamples::ProcessCode ActsExamples::RootTrajectorySummaryWriter::writeT(
       // Push the corresponding truth particle info for the track.
       // Always push back even if majority particle not found
       m_majorityParticleId.push_back(majorityParticleId);
+      m_majorityParticlePdg.push_back(majorityParticlePdg);
       m_nMajorityHits.push_back(nMajorityHits);
       m_t_charge.push_back(t_charge);
       m_t_time.push_back(t_time);
@@ -405,6 +411,7 @@ ActsExamples::ProcessCode ActsExamples::RootTrajectorySummaryWriter::writeT(
 
   m_multiTrajNr.clear();
   m_subTrajNr.clear();
+  m_seedIndex.clear();
   m_nStates.clear();
   m_nMeasurements.clear();
   m_nOutliers.clear();
@@ -422,6 +429,7 @@ ActsExamples::ProcessCode ActsExamples::RootTrajectorySummaryWriter::writeT(
 
   m_nMajorityHits.clear();
   m_majorityParticleId.clear();
+  m_majorityParticlePdg.clear();
   m_t_charge.clear();
   m_t_time.clear();
   m_t_vx.clear();

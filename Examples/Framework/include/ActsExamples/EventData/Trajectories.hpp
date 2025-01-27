@@ -43,12 +43,14 @@ struct Trajectories final {
   /// @param multiTraj The multi trajectory
   /// @param tTips Tip indices that identify valid trajectories
   /// @param parameters Fitted track parameters indexed by trajectory index
+  /// @param seedIndex Which seed steers this track
   Trajectories(MultiTrajectory multiTraj,
                const std::vector<Acts::MultiTrajectoryTraits::IndexType>& tTips,
-               const IndexedParameters& parameters)
+               const IndexedParameters& parameters, int seedIndex = -1)
       : m_multiTrajectory(std::move(multiTraj)),
         m_trackTips(tTips),
-        m_trackParameters(parameters) {}
+        m_trackParameters(parameters),
+        m_seedIndex(seedIndex) {}
 
   /// Return true if there exists no valid trajectory.
   bool empty() const { return m_trackTips.empty(); }
@@ -60,6 +62,9 @@ struct Trajectories final {
   const std::vector<Acts::MultiTrajectoryTraits::IndexType>& tips() const {
     return m_trackTips;
   }
+
+  /// Access the seed index
+  int seedIndex() const { return m_seedIndex; }
 
   /// Check if a trajectory exists for the given index.
   ///
@@ -100,6 +105,8 @@ struct Trajectories final {
   std::vector<Acts::MultiTrajectoryTraits::IndexType> m_trackTips = {};
   // The fitted parameters at the provided surface for individual trajectories
   IndexedParameters m_trackParameters = {};
+  // seed Index
+  int m_seedIndex = -1;
 };
 
 /// Container for multiple trajectories.

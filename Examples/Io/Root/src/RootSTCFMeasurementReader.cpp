@@ -268,6 +268,9 @@ ActsExamples::ProcessCode ActsExamples::RootSTCFMeasurementReader::read(
         Acts::Vector3 mom((*ITKmomentumX)[i], (*ITKmomentumY)[i],
                           (*ITKmomentumZ)[i]);
 
+        //std::cout << "ITK hit r =  "
+        //          << std::hypot((*ITKpositionX)[i], (*ITKpositionY)[i])
+        //         << std::endl;
         // std::cout<<"r = " << std::hypot((*ITKpositionX)[i],
         // (*ITKpositionY)[i]) <<", phi = " << std::atan2((*ITKpositionY)[i],
         // (*ITKpositionX)[i]) << std::endl;
@@ -291,7 +294,7 @@ ActsExamples::ProcessCode ActsExamples::RootSTCFMeasurementReader::read(
         } else {
           auto bounds = cylinderSurface->bounds();
           auto values = bounds.values();
-          // std::cout<<"ITK surface r = "<< values[0] << std::endl;
+          //std::cout << "ITK surface r = " << values[0] << std::endl;
         }
 
         int particleId = (*ITKparticleId)[i];
@@ -435,14 +438,23 @@ ActsExamples::ProcessCode ActsExamples::RootSTCFMeasurementReader::read(
           IndexSourceLink& sourceLink = sourceLinkStorage.back();
           sourceLinks.insert(sourceLinks.end(), sourceLink);
 
+          auto lpResult =
+              surfacePtr->globalToLocal(context.geoContext, pos, dir);
+          if (not lpResult.ok()) {
+            ACTS_FATAL("Global to local transformation did not succeed.");
+            return ProcessCode::ABORT;
+          }
+          auto lPosition = lpResult.value();
+
           if (surfacePtr->type() == Acts::Surface::SurfaceType::Cylinder) {
             std::array<Acts::BoundIndices, 2> indices = {Acts::eBoundLoc0,
                                                          Acts::eBoundLoc1};
 
-            Acts::ActsVector<2> par{m_ITKRadius[moduleGeoId.layer() / 2 - 1] *
-                                            Acts::VectorHelpers::phi(pos) +
-                                        0.1 * stdNormal(rng),
-                                    pos.z() + 0.4 * stdNormal(rng)};
+            // Acts::ActsVector<2> par{m_ITKRadius[moduleGeoId.layer() / 2 - 1]
+            // * Acts::VectorHelpers::phi(pos) + 0.1 * stdNormal(rng), pos.z() +
+            // 0.4 * stdNormal(rng)};
+            Acts::ActsVector<2> par{lPosition[0] + 0.1 * stdNormal(rng),
+                                    lPosition[1] + 0.4 * stdNormal(rng)};
             Acts::ActsSymMatrix<2> cov = Acts::ActsSymMatrix<2>::Identity();
             cov(0, 0) = 0.1 * 0.1;
             cov(1, 1) = 0.4 * 0.4;
@@ -453,15 +465,10 @@ ActsExamples::ProcessCode ActsExamples::RootSTCFMeasurementReader::read(
             // std::array<Acts::BoundIndices, 2> indices = {Acts::eBoundLoc0,
             // Acts::eBoundLoc1};
             std::array<Acts::BoundIndices, 1> indices = {Acts::eBoundLoc0};
-            auto lpResult =
-                surfacePtr->globalToLocal(context.geoContext, pos, dir);
-            if (not lpResult.ok()) {
-              ACTS_FATAL("Global to local transformation did not succeed.");
-              return ProcessCode::ABORT;
-            }
-            auto lPosition = lpResult.value();
             // auto driftDistance = std::copysign(simHit.fourPosition()[3],
             // lPosition[0]);
+            // The depositedEnergy is actually the drift distance from
+            // simulation (without sign).
             auto driftDistance =
                 std::copysign(simHit.depositedEnergy(), lPosition[0]);
 
@@ -536,6 +543,16 @@ ActsExamples::ProcessCode ActsExamples::RootSTCFMeasurementReader::read(
                           (*particleVertexZ)[i]);
         Acts::Vector3 mom((*particleMomentumX)[i], (*particleMomentumY)[i],
                           (*particleMomentumZ)[i]);
+
+        if (std::hypot((*particleVertexX)[i], (*particleVertexY)[i]) > 66.2 and
+            particleITKnum > 2) {
+          std::cout << "particle pt = " << hypot(mom.x(), mom.y())
+                    << ", vertex = " << pos.transpose() << std::endl;
+          //		throw std::runtime_error(
+          //              "The particle has vertex > 60 while have more than 2
+          //              ITK hits?");
+        }
+
         double charge = 0;
         if ((*particlePDG)[i] == 13 or (*particlePDG)[i] == 11 or
             (*particlePDG)[i] == -211 or (*particlePDG)[i] == -2212) {
@@ -564,15 +581,15 @@ ActsExamples::ProcessCode ActsExamples::RootSTCFMeasurementReader::read(
         unordered_particles.push_back(std::move(particle));
       }
 
-      for (const auto& [particleIndex, nHits] : particleHitIdx) {
-        std::cout << "particle " << particleIndex << " has " << nHits
-                  << " nHits"
-                  << ", nITKHits = " << particleITKHitIdx[particleIndex]
-                  << std::endl;
-      }
+      //for (const auto& [particleIndex, nHits] : particleHitIdx) {
+      //  std::cout << "particle " << particleIndex << " has " << nHits
+      //            << " nHits"
+      //            << ", nITKHits = " << particleITKHitIdx[particleIndex]
+      //            << std::endl;
+      //}
 
-      std::cout << "nITKHits = " << nITKHits << ", nMDCHits = " << nMDCHits
-                << ", nParticles (nITKHits>=3) = " << nParticles << std::endl;
+      //std::cout << "nITKHits = " << nITKHits << ", nMDCHits = " << nMDCHits
+      //          << ", nParticles (nITKHits>=3) = " << nParticles << std::endl;
     }
 
     // Write the collections to the EventStore

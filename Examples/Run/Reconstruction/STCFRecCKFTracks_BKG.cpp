@@ -61,11 +61,12 @@ void addRecCKFOptions(ActsExamples::Options::Description& desc) {
       "Use track parameters estimated from truth tracks for steering CKF");
   opt("perf-eta-range",
       value<ActsExamples::Options::Reals<3>>()->default_value(
-          {{35, -1.75, 1.75}}),
+          {{35, -1.75, 1.75}}),  // eta
       "Eta bins, min and max for plotting the performance, must be "
       "of form i:j:k.");
   opt("perf-pt-range",
-      value<ActsExamples::Options::Reals<3>>()->default_value({{20, 0.0, 2.0}}),
+      value<ActsExamples::Options::Reals<3>>()->default_value(
+          {{19, 0.05, 1.95}}),
       "pT bins, min and max for plotting the performance, must be "
       "of form i:j.");
   opt("ckf-prop-steps", value<int>()->default_value(10000),
@@ -76,6 +77,8 @@ void addRecCKFOptions(ActsExamples::Options::Description& desc) {
       "The seeding radLengthPerSeed.");
   opt("seed-max-ptscattering", value<double>()->default_value(10),
       "The seeding maxPtScattering.");
+  opt("seed-maxSeedsPerSpM", value<int>()->default_value(1),
+      "The seeding maxSeedsPerSpM.");
   opt("seed-impact-max", value<double>()->default_value(10),
       "The seeding2impactMax.");
   opt("seed-deltar-max", value<double>()->default_value(80),
@@ -161,6 +164,7 @@ int main(int argc, char* argv[]) {
   STCFMeasurementReaderCfg.trackingGeometry = trackingGeometry;
   STCFMeasurementReaderCfg.randomNumbers = rnd;
   STCFMeasurementReaderCfg.ignoreNoiseHits = ignoreNoiseHits;
+  STCFMeasurementReaderCfg.absCosThetaCut = 0.935;
   sequencer.addReader(std::make_shared<RootSTCFMeasurementReader_BKG>(
       STCFMeasurementReaderCfg, logLevel));
 
@@ -243,15 +247,16 @@ int main(int argc, char* argv[]) {
           vm["seed-max-ptscattering"].template as<double>() *
           Acts::UnitConstants::GeV;
 
-      seedingCfg.seedFinderConfig.collisionRegionMin = -250_mm;
-      seedingCfg.seedFinderConfig.collisionRegionMax = 250._mm;
+      seedingCfg.seedFinderConfig.collisionRegionMin = -1000._mm;
+      seedingCfg.seedFinderConfig.collisionRegionMax = 1000._mm;
 
-      seedingCfg.gridConfig.zMin = -500._mm;
-      seedingCfg.gridConfig.zMax = 500._mm;
+      seedingCfg.gridConfig.zMin = -1000._mm;
+      seedingCfg.gridConfig.zMax = 1000._mm;
       seedingCfg.seedFinderConfig.zMin = seedingCfg.gridConfig.zMin;
       seedingCfg.seedFinderConfig.zMax = seedingCfg.gridConfig.zMax;
 
-      seedingCfg.seedFilterConfig.maxSeedsPerSpM = 1;
+      seedingCfg.seedFilterConfig.maxSeedsPerSpM =
+          vm["seed-maxSeedsPerSpM"].template as<int>();
       seedingCfg.seedFinderConfig.maxSeedsPerSpM =
           seedingCfg.seedFilterConfig.maxSeedsPerSpM;
 
@@ -269,7 +274,8 @@ int main(int argc, char* argv[]) {
           vm["seed-rad-length-per-seed"].template as<double>();
       seedingCfg.maxSeeds = vm["seed-max-seeds"].template as<int>();
 
-      seedingCfg.gridConfig.minPt = 40._MeV;
+      // seedingCfg.gridConfig.minPt = 40._MeV;
+      seedingCfg.gridConfig.minPt = 30._MeV;
       seedingCfg.seedFinderConfig.minPt = seedingCfg.gridConfig.minPt;
 
       seedingCfg.gridConfig.bFieldInZ = 1.0_T;
@@ -416,7 +422,9 @@ int main(int argc, char* argv[]) {
   // The bottom seed could be the first, second or third hits on the truth
   // track?
   perfWriterCfg.nMeasurementsMin = particleSelectorCfg.nHitsMin;
-  perfWriterCfg.ptMin = 40_MeV;
+  perfWriterCfg.ptMin = 50_MeV;
+  // perfWriterCfg.truthMatchProbMin  = 0.5;
+  perfWriterCfg.truthMatchProbMin = 0.8;
   perfWriterCfg.effPlotToolConfig.varBinning["Eta"] =
       PlotHelpers::Binning("#eta", etaRange[0], etaRange[1], etaRange[2]);
   perfWriterCfg.effPlotToolConfig.varBinning["Pt"] =
@@ -433,9 +441,9 @@ int main(int argc, char* argv[]) {
       PlotHelpers::Binning("#eta", etaRange[0], etaRange[1], etaRange[2]);
   perfWriterCfg.trackSummaryPlotToolConfig.varBinning["Pt"] =
       PlotHelpers::Binning("pT [GeV/c]", ptRange[0], ptRange[1], ptRange[2]);
-  perfWriterCfg.trackSummaryPlotToolConfig.varBinning["Num"] =
-      PlotHelpers::Binning("N", 60, -0.5, 59.5);
-  // perfWriterCfg.filePath = outputDir + "/muon_performance_ckf.root";
+  // perfWriterCfg.trackSummaryPlotToolConfig.varBinning["Num"] =
+  //     PlotHelpers::Binning("N", 60, -0.5, 59.5);
+  //  perfWriterCfg.filePath = outputDir + "/muon_performance_ckf.root";
   perfWriterCfg.filePath = outputDir + "/pipijpsiBKG_ckf.root";
   sequencer.addWriter(
       std::make_shared<CKFPerformanceWriter>(perfWriterCfg, logLevel));

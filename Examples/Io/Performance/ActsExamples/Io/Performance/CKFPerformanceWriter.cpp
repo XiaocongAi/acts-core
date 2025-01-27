@@ -99,6 +99,12 @@ ActsExamples::ProcessCode ActsExamples::CKFPerformanceWriter::writeT(
   // For each particle within a track, how many hits did it contribute
   std::vector<ParticleHitCount> particleHitCounts;
 
+  // get particle pdg
+  std::map<ActsFatras::Barcode, Acts::PdgParticle> particlePdgs;
+  for (const auto& particle : particles) {
+    particlePdgs[particle.particleId()] = particle.pdg();
+  }
+
   // Exclusive access to the tree while writing
   std::lock_guard<std::mutex> lock(m_writeMutex);
 
@@ -137,16 +143,11 @@ ActsExamples::ProcessCode ActsExamples::CKFPerformanceWriter::writeT(
       }
       const auto& fittedParameters = traj.trackParameters(trackTip);
       // Requirement on the pT of the track
-      const auto& momentum = fittedParameters.momentum();
-      const auto pT = perp(momentum);
-      if (pT < m_cfg.ptMin) {
-        continue;
-      }
-      // Fill the trajectory summary info
-      m_trackSummaryPlotTool.fill(m_trackSummaryPlotCache, fittedParameters,
-                                  trajState.nStates, trajState.nMeasurements,
-                                  trajState.nOutliers, trajState.nHoles,
-                                  trajState.nSharedHits);
+      // const auto& momentum = fittedParameters.momentum();
+      // const auto pT = perp(momentum);
+      // if (pT < m_cfg.ptMin) {
+      //  continue;
+      //}
 
       // Get the majority truth particle to this track
       identifyContributingParticles(hitParticlesMap, traj, trackTip,
@@ -158,12 +159,20 @@ ActsExamples::ProcessCode ActsExamples::CKFPerformanceWriter::writeT(
             << trackTip);
         continue;
       }
+
       // Get the majority particleId and majority particle counts
       // Note that the majority particle might be not in the truth seeds
       // collection
       ActsFatras::Barcode majorityParticleId =
           particleHitCounts.front().particleId;
       size_t nMajorityHits = particleHitCounts.front().hitCount;
+
+      // Fill the trajectory summary info
+      m_trackSummaryPlotTool.fill(m_trackSummaryPlotCache, fittedParameters,
+                                  particlePdgs[majorityParticleId],
+                                  trajState.nStates, trajState.nMeasurements,
+                                  nMajorityHits, trajState.nOutliers,
+                                  trajState.nHoles, trajState.nSharedHits);
 
       // Check if the trajectory is matched with truth.
       // If not, it will be classified as 'fake'
@@ -177,7 +186,8 @@ ActsExamples::ProcessCode ActsExamples::CKFPerformanceWriter::writeT(
         unmatched[majorityParticleId]++;
       }
       // Fill fake rate plots
-      m_fakeRatePlotTool.fill(m_fakeRatePlotCache, fittedParameters, isFake);
+      m_fakeRatePlotTool.fill(m_fakeRatePlotCache, fittedParameters,
+                              particlePdgs[majorityParticleId], isFake);
       m_perfSummary->Fill(isFake, 1);
 
       // Use neural network classification for duplication rate plots
@@ -191,6 +201,7 @@ ActsExamples::ProcessCode ActsExamples::CKFPerformanceWriter::writeT(
         bool isDuplicated = m_cfg.duplicatedPredictor(inputFeatures);
         // Fill the duplication rate
         m_duplicationPlotTool.fill(m_duplicationPlotCache, fittedParameters,
+                                   particlePdgs[majorityParticleId],
                                    isDuplicated);
       }
     }  // end all trajectories in a multiTrajectory
@@ -214,7 +225,7 @@ ActsExamples::ProcessCode ActsExamples::CKFPerformanceWriter::writeT(
         bool isDuplicated = (itrack != 0);
         // Fill the duplication rate
         m_duplicationPlotTool.fill(m_duplicationPlotCache, fittedParameters,
-                                   isDuplicated);
+                                   particlePdgs[particleId], isDuplicated);
         m_perfSummary->Fill(isDuplicated, 2);
       }
     }
@@ -226,11 +237,12 @@ ActsExamples::ProcessCode ActsExamples::CKFPerformanceWriter::writeT(
     if (particle.transverseMomentum() < m_cfg.ptMin) {
       continue;
     }
-    ///*****
-    // if (abs(particle.pdg()) != 211 && (abs(particle.pdg()) != 2212 )) {
-    // continue;
-    //}
-    ///*****
+    //*****
+    if (abs(particle.pdg()) != 211 && (abs(particle.pdg()) != 2212) &&
+        (abs(particle.pdg()) != 13)) {
+      continue;
+    }
+    //*****
     auto particleId = particle.particleId();
     // Investigate the truth-matched tracks
     size_t nMatchedTracks = 0;
@@ -239,14 +251,18 @@ ActsExamples::ProcessCode ActsExamples::CKFPerformanceWriter::writeT(
     if (imatched != matched.end()) {
       nMatchedTracks = imatched->second.size();
       isReconstructed = true;
+      //} else {
+      //  std::cout<<"Event " << ctx.eventNumber <<" particle " <<
+      //  particle.pdg() <<" is not found " << std::endl;
     }
     // Fill efficiency plots
     m_effPlotTool.fill(m_effPlotCache, particle, isReconstructed);
     m_perfSummary->Fill(isReconstructed, 0);
     // Fill number of duplicated tracks for this particle
-    m_duplicationPlotTool.fill(m_duplicationPlotCache, particle,
-                               nMatchedTracks - 1);
-
+    if (isReconstructed) {
+      m_duplicationPlotTool.fill(m_duplicationPlotCache, particle,
+                                 nMatchedTracks - 1);
+    }
     // Investigate the fake (i.e. truth-unmatched) tracks
     size_t nFakeTracks = 0;
     auto ifake = unmatched.find(particleId);

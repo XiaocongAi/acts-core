@@ -126,8 +126,10 @@ ActsExamples::ProcessCode ActsExamples::SeedingPerformanceWriter::writeT(
   int nDuplicatedParticles = 0;
   // Fill the effeciency and fake rate plots
   for (const auto& particle : particles) {
-    // if (std::abs(particle.pdg()!=2212)){continue;   }
-    // if (std::abs(particle.pdg()!=211)){  continue;   }
+    // if (std::abs(particle.pdg())!=2212){continue;   }
+    // if (std::abs(particle.pdg())!=211){  continue;   }
+    // if (std::abs(particle.pdg())!=13){  continue;   }
+
     const auto it1 = truthCount.find(particle.particleId());
     bool isMatched = false;
     int nMatchedSeedsForParticle = 0;
@@ -139,9 +141,22 @@ ActsExamples::ProcessCode ActsExamples::SeedingPerformanceWriter::writeT(
         nDuplicatedParticles++;
       }
     }
+
+    // In addtion to looping tracks, it can also happen that two true seeds are
+    // matched to the same particles?
+    // if(std::abs(particle.pdg())==13 and nMatchedSeedsForParticle>1) {
+    //  throw std::runtime_error("Find duplicate tracks for mu");
+    //}
+    // if(nMatchedSeedsForParticle<1) {
+    //    std::cout<<"event " << ctx.eventNumber << ", particle with index " <<
+    //    particle.particleId().subParticle() << " has no seed" << std::endl;
+    // }
     m_effPlotTool.fill(m_effPlotCache, particle, isMatched);
-    m_duplicationPlotTool.fill(m_duplicationPlotCache, particle,
-                               nMatchedSeedsForParticle - 1);
+    // Don't fill for unmatched particles
+    if (nMatchedSeedsForParticle >= 1) {
+      m_duplicationPlotTool.fill(m_duplicationPlotCache, particle,
+                                 nMatchedSeedsForParticle - 1);
+    }
   }
   ACTS_DEBUG("Number of seeds: " << nSeeds);
   m_nTotalSeeds += nSeeds;

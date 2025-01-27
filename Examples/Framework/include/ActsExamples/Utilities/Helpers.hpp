@@ -16,6 +16,7 @@
 #include "TH1F.h"
 #include "TH2F.h"
 #include "TProfile.h"
+#include "TProfile2D.h"
 #include "TROOT.h"
 
 namespace ActsExamples {
@@ -113,6 +114,10 @@ void fillEff(TEfficiency* efficiency, float xValue, float yValue, bool status);
 TProfile* bookProf(const char* profName, const char* profTitle,
                    const Binning& varXBinning, const Binning& varYBinning);
 
+TProfile2D* bookProf2D(const char* profName, const char* profTitle,
+                       const Binning& varXBinning, const Binning& varYBinning,
+                       const Binning& varZBinning);
+
 /// @brief fill a TProfile plot
 /// @param profile plot to fill
 /// @param xValue  xvalue to fill
@@ -121,6 +126,8 @@ TProfile* bookProf(const char* profName, const char* profTitle,
 void fillProf(TProfile* profile, float xValue, float yValue,
               float weight = 1.0);
 
+void fillProf2D(TProfile2D* profile, float xValue, float yValue, float zValue,
+                float weight = 1.0);
 }  // namespace PlotHelpers
 
 }  // namespace ActsExamples

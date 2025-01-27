@@ -34,7 +34,11 @@ class DuplicationPlotTool {
         {"Eta", PlotHelpers::Binning("#eta", 40, -4, 4)},
         {"Phi", PlotHelpers::Binning("#phi", 100, -3.15, 3.15)},
         {"Pt", PlotHelpers::Binning("pT [GeV/c]", 40, 0, 100)},
-        {"Num", PlotHelpers::Binning("N", 30, -0.5, 29.5)}};
+        {"Costheta", PlotHelpers::Binning("cos#theta", 24, -1, 1.4)},
+        {"Num", PlotHelpers::Binning("N", 30, 0, 30)}};
+    std::map<int, PlotHelpers::Binning> ptBinning = {
+        {211, PlotHelpers::Binning("pT [GeV/c]", 8, 0.05, 0.45)},
+        {13, PlotHelpers::Binning("pT [GeV/c]", 13, 0.5, 1.8)}};
   };
 
   /// @brief Nested Cache struct
@@ -45,6 +49,8 @@ class DuplicationPlotTool {
     TEfficiency* duplicationRate_vs_pT;  ///< Tracking duplication rate vs pT
     TEfficiency* duplicationRate_vs_eta;  ///< Tracking duplication rate vs eta
     TEfficiency* duplicationRate_vs_phi;  ///< Tracking duplication rate vs phi
+    std::map<int, TEfficiency*> duplicationRate_vs_pT_costheta;
+    std::map<int, TProfile2D*> nDuplicated_vs_pT_costheta;
   };
 
   /// Constructor
@@ -65,7 +71,7 @@ class DuplicationPlotTool {
   /// @param status the (truth-matched) reconstructed track is duplicated or not
   void fill(DuplicationPlotCache& duplicationPlotCache,
             const Acts::BoundTrackParameters& fittedParameters,
-            bool status) const;
+            const Acts::PdgParticle& majorityParticlePdg, bool status) const;
 
   /// @brief fill number of duplicated tracks for a truth particle seed
   ///

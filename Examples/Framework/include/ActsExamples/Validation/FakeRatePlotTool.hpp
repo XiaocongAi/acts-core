@@ -31,7 +31,11 @@ class FakeRatePlotTool {
         {"Eta", PlotHelpers::Binning("#eta", 40, -4, 4)},
         {"Phi", PlotHelpers::Binning("#phi", 100, -3.15, 3.15)},
         {"Pt", PlotHelpers::Binning("pT [GeV/c]", 40, 0, 100)},
+        {"Costheta", PlotHelpers::Binning("cos#theta", 24, -1, 1.4)},
         {"Num", PlotHelpers::Binning("N", 30, -0.5, 29.5)}};
+    std::map<int, PlotHelpers::Binning> ptBinning = {
+        {211, PlotHelpers::Binning("pT [GeV/c]", 8, 0.05, 0.45)},
+        {13, PlotHelpers::Binning("pT [GeV/c]", 13, 0.5, 1.8)}};
   };
 
   /// @brief Nested Cache struct
@@ -49,6 +53,7 @@ class FakeRatePlotTool {
     TEfficiency* fakeRate_vs_pT;   ///< Tracking fake rate vs pT
     TEfficiency* fakeRate_vs_eta;  ///< Tracking fake rate vs eta
     TEfficiency* fakeRate_vs_phi;  ///< Tracking fake rate vs phi
+    std::map<int, TEfficiency*> fakeRate_vs_pT_costheta;
   };
 
   /// Constructor
@@ -69,7 +74,7 @@ class FakeRatePlotTool {
   /// @param status the reconstructed track is fake or not
   void fill(FakeRatePlotCache& fakeRatePlotCache,
             const Acts::BoundTrackParameters& fittedParameters,
-            bool status) const;
+            const Acts::PdgParticle& majorityParticlePdg, bool status) const;
 
   /// @brief fill number of reco/truth-matched/fake tracks for a truth particle
   /// seed

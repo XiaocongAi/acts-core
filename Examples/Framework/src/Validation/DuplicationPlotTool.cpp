@@ -25,6 +25,7 @@ void ActsExamples::DuplicationPlotTool::book(
     DuplicationPlotTool::DuplicationPlotCache& duplicationPlotCache) const {
   PlotHelpers::Binning bPt = m_cfg.varBinning.at("Pt");
   PlotHelpers::Binning bEta = m_cfg.varBinning.at("Eta");
+  PlotHelpers::Binning bCostheta = m_cfg.varBinning.at("Costheta");
   PlotHelpers::Binning bPhi = m_cfg.varBinning.at("Phi");
   PlotHelpers::Binning bNum = m_cfg.varBinning.at("Num");
   ACTS_DEBUG("Initialize the histograms for duplication rate plots");
@@ -51,6 +52,21 @@ void ActsExamples::DuplicationPlotTool::book(
   duplicationPlotCache.nDuplicated_vs_phi = PlotHelpers::bookProf(
       "nDuplicated_vs_phi", "Number of duplicated track candidates", bPhi,
       bNum);
+
+  for (const auto& [pdg, ptBin] : m_cfg.ptBinning) {
+    duplicationPlotCache.duplicationRate_vs_pT_costheta[pdg] =
+        PlotHelpers::bookEff(
+            Form("duplicationRate_%i_vs_pT_costheta", pdg),
+            Form("Duplication rate of particle with absolute pdg = %i;Reco "
+                 "p_{T} [GeV/c];Reco cos#theta;Duplication rate",
+                 pdg),
+            ptBin, bCostheta);
+    duplicationPlotCache.nDuplicated_vs_pT_costheta[pdg] =
+        PlotHelpers::bookProf2D(
+            Form("nDuplicated_%i_vs_pT_costheta", pdg),
+            Form("nDuplicated of particle with absolute pdg = %i", pdg), ptBin,
+            bCostheta, bNum);
+  }
 }
 
 void ActsExamples::DuplicationPlotTool::clear(
@@ -61,6 +77,13 @@ void ActsExamples::DuplicationPlotTool::clear(
   delete duplicationPlotCache.nDuplicated_vs_pT;
   delete duplicationPlotCache.nDuplicated_vs_eta;
   delete duplicationPlotCache.nDuplicated_vs_phi;
+  for (auto& [pdg, dupli] :
+       duplicationPlotCache.duplicationRate_vs_pT_costheta) {
+    delete dupli;
+  }
+  for (auto& [pdg, dupli] : duplicationPlotCache.nDuplicated_vs_pT_costheta) {
+    delete dupli;
+  }
 }
 
 void ActsExamples::DuplicationPlotTool::write(
@@ -73,14 +96,24 @@ void ActsExamples::DuplicationPlotTool::write(
   duplicationPlotCache.nDuplicated_vs_pT->Write();
   duplicationPlotCache.nDuplicated_vs_eta->Write();
   duplicationPlotCache.nDuplicated_vs_phi->Write();
+  for (const auto& [pdg, dupli] :
+       duplicationPlotCache.duplicationRate_vs_pT_costheta) {
+    dupli->Write();
+  }
+  for (const auto& [pdg, dupli] :
+       duplicationPlotCache.nDuplicated_vs_pT_costheta) {
+    dupli->Write();
+  }
 }
 
 void ActsExamples::DuplicationPlotTool::fill(
     DuplicationPlotTool::DuplicationPlotCache& duplicationPlotCache,
-    const Acts::BoundTrackParameters& fittedParameters, bool status) const {
+    const Acts::BoundTrackParameters& fittedParameters,
+    const Acts::PdgParticle& majorityParticlePdg, bool status) const {
   const auto& momentum = fittedParameters.momentum();
   const double fit_phi = phi(momentum);
   const double fit_eta = eta(momentum);
+  const double fit_theta = theta(momentum);
   const double fit_pT = perp(momentum);
 
   PlotHelpers::fillEff(duplicationPlotCache.duplicationRate_vs_pT, fit_pT,
@@ -89,6 +122,12 @@ void ActsExamples::DuplicationPlotTool::fill(
                        status);
   PlotHelpers::fillEff(duplicationPlotCache.duplicationRate_vs_phi, fit_phi,
                        status);
+  if (m_cfg.ptBinning.count(std::abs(majorityParticlePdg)) > 0) {
+    PlotHelpers::fillEff(
+        duplicationPlotCache
+            .duplicationRate_vs_pT_costheta[std::abs(majorityParticlePdg)],
+        fit_pT, std::cos(fit_theta), status);
+  }
 }
 
 void ActsExamples::DuplicationPlotTool::fill(
@@ -96,6 +135,7 @@ void ActsExamples::DuplicationPlotTool::fill(
     const ActsFatras::Particle& truthParticle, size_t nDuplicatedTracks) const {
   const auto t_phi = phi(truthParticle.unitDirection());
   const auto t_eta = eta(truthParticle.unitDirection());
+  const auto t_theta = theta(truthParticle.unitDirection());
   const auto t_pT = truthParticle.transverseMomentum();
 
   PlotHelpers::fillProf(duplicationPlotCache.nDuplicated_vs_pT, t_pT,
@@ -104,4 +144,10 @@ void ActsExamples::DuplicationPlotTool::fill(
                         nDuplicatedTracks);
   PlotHelpers::fillProf(duplicationPlotCache.nDuplicated_vs_phi, t_phi,
                         nDuplicatedTracks);
+  if (m_cfg.ptBinning.count(std::abs(truthParticle.pdg())) > 0) {
+    PlotHelpers::fillProf2D(
+        duplicationPlotCache
+            .nDuplicated_vs_pT_costheta[std::abs(truthParticle.pdg())],
+        t_pT, std::cos(t_theta), nDuplicatedTracks);
+  }
 }

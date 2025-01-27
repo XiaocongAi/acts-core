@@ -28,7 +28,12 @@ class TrackSummaryPlotTool {
         {"Eta", PlotHelpers::Binning("#eta", 40, -4, 4)},
         {"Phi", PlotHelpers::Binning("#phi", 100, -3.15, 3.15)},
         {"Pt", PlotHelpers::Binning("pT [GeV/c]", 40, 0, 100)},
-        {"Num", PlotHelpers::Binning("N", 30, -0.5, 29.5)}};
+        {"Costheta", PlotHelpers::Binning("Reco cos#theta", 24, -1, 1.4)},
+        {"Num", PlotHelpers::Binning("nMeasurements", 66, -0.5, 65.5)},
+        {"Purity", PlotHelpers::Binning("Track purity", 40, 0., 1)}};
+    std::map<int, PlotHelpers::Binning> ptBinning = {
+        {211, PlotHelpers::Binning("Reco p_{T} [GeV/c]", 8, 0.05, 0.45)},
+        {13, PlotHelpers::Binning("Reco p_{T} [GeV/c]", 13, 0.5, 1.8)}};
   };
 
   /// @brief Nested Cache struct
@@ -45,6 +50,9 @@ class TrackSummaryPlotTool {
     TProfile* nHoles_vs_pt;       ///< Number of holes vs pt
     TProfile* nOutliers_vs_pt;    ///< Number of outliers vs pt
     TProfile* nSharedHits_vs_pt;  ///< Number of Shared Hits vs pt
+    std::map<int, TProfile2D*> nMeasurements_vs_pT_costheta;
+    std::map<int, TProfile2D*> nMajorityHits_vs_pT_costheta;
+    std::map<int, TProfile2D*> trackPurity_vs_pT_costheta;
   };
 
   /// Constructor
@@ -67,9 +75,10 @@ class TrackSummaryPlotTool {
   /// @param nOutliers number of outliers
   /// @param nHoles number of holes
   void fill(TrackSummaryPlotCache& trackSummaryPlotCache,
-            const Acts::BoundTrackParameters& fittedParameters, size_t nStates,
-            size_t nMeasurments, size_t Outliers, size_t nHoles,
-            size_t nSharedHits) const;
+            const Acts::BoundTrackParameters& fittedParameters,
+            const Acts::PdgParticle& majorityParticlePdg, size_t nStates,
+            size_t nMeasurments, size_t nMajorityHits, size_t Outliers,
+            size_t nHoles, size_t nSharedHits) const;
 
   /// @brief write the track info plots to file
   ///

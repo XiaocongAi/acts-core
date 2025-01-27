@@ -19,8 +19,10 @@ ActsExamples::TrackSummaryPlotTool::TrackSummaryPlotTool(
 void ActsExamples::TrackSummaryPlotTool::book(
     TrackSummaryPlotTool::TrackSummaryPlotCache& trackSummaryPlotCache) const {
   PlotHelpers::Binning bEta = m_cfg.varBinning.at("Eta");
+  PlotHelpers::Binning bCostheta = m_cfg.varBinning.at("Costheta");
   PlotHelpers::Binning bPt = m_cfg.varBinning.at("Pt");
   PlotHelpers::Binning bNum = m_cfg.varBinning.at("Num");
+  PlotHelpers::Binning bPu = m_cfg.varBinning.at("Purity");
   ACTS_DEBUG("Initialize the histograms for track info plots");
   // number of track states versus eta
   trackSummaryPlotCache.nStates_vs_eta = PlotHelpers::bookProf(
@@ -52,6 +54,24 @@ void ActsExamples::TrackSummaryPlotTool::book(
   // number of Shared Hits versus pt
   trackSummaryPlotCache.nSharedHits_vs_pt = PlotHelpers::bookProf(
       "nSharedHits_vs_pT", "Number of Shared Hits vs. pT", bPt, bNum);
+
+  for (const auto& [pdg, ptBin] : m_cfg.ptBinning) {
+    trackSummaryPlotCache.nMeasurements_vs_pT_costheta[pdg] =
+        PlotHelpers::bookProf2D(
+            Form("nMeasurements_%i_vs_pT_costheta", pdg),
+            Form("nMeasurements of particle with absolute pdg = %i", pdg),
+            ptBin, bCostheta, bNum);
+    trackSummaryPlotCache.nMajorityHits_vs_pT_costheta[pdg] =
+        PlotHelpers::bookProf2D(
+            Form("nMajorityHits_%i_vs_pT_costheta", pdg),
+            Form("nMajorityHits of particle with absolute pdg = %i", pdg),
+            ptBin, bCostheta, bNum);
+    trackSummaryPlotCache.trackPurity_vs_pT_costheta[pdg] =
+        PlotHelpers::bookProf2D(
+            Form("trackPurity_%i_vs_pT_costheta", pdg),
+            Form("Track purity of particle with absolute pdg = %i", pdg), ptBin,
+            bCostheta, bPu);
+  }
 }
 
 void ActsExamples::TrackSummaryPlotTool::clear(
@@ -66,6 +86,15 @@ void ActsExamples::TrackSummaryPlotTool::clear(
   delete trackSummaryPlotCache.nOutliers_vs_pt;
   delete trackSummaryPlotCache.nHoles_vs_pt;
   delete trackSummaryPlotCache.nSharedHits_vs_pt;
+  for (auto& [pdg, dist] : trackSummaryPlotCache.nMeasurements_vs_pT_costheta) {
+    delete dist;
+  }
+  for (auto& [pdg, dist] : trackSummaryPlotCache.nMajorityHits_vs_pT_costheta) {
+    delete dist;
+  }
+  for (auto& [pdg, dist] : trackSummaryPlotCache.trackPurity_vs_pT_costheta) {
+    delete dist;
+  }
 }
 
 void ActsExamples::TrackSummaryPlotTool::write(
@@ -82,17 +111,32 @@ void ActsExamples::TrackSummaryPlotTool::write(
   trackSummaryPlotCache.nOutliers_vs_pt->Write();
   trackSummaryPlotCache.nHoles_vs_pt->Write();
   trackSummaryPlotCache.nSharedHits_vs_pt->Write();
+  for (const auto& [pdg, dist] :
+       trackSummaryPlotCache.nMeasurements_vs_pT_costheta) {
+    dist->Write();
+  }
+  for (const auto& [pdg, dist] :
+       trackSummaryPlotCache.nMajorityHits_vs_pT_costheta) {
+    dist->Write();
+  }
+  for (const auto& [pdg, dist] :
+       trackSummaryPlotCache.trackPurity_vs_pT_costheta) {
+    dist->Write();
+  }
 }
 
 void ActsExamples::TrackSummaryPlotTool::fill(
     TrackSummaryPlotTool::TrackSummaryPlotCache& trackSummaryPlotCache,
-    const Acts::BoundTrackParameters& fittedParameters, size_t nStates,
-    size_t nMeasurements, size_t nOutliers, size_t nHoles,
+    const Acts::BoundTrackParameters& fittedParameters,
+    const Acts::PdgParticle& majorityParticlePdg, size_t nStates,
+    size_t nMeasurements, size_t nMajorityHits, size_t nOutliers, size_t nHoles,
     size_t nSharedHits) const {
   using Acts::VectorHelpers::eta;
   using Acts::VectorHelpers::perp;
+  using Acts::VectorHelpers::theta;
   const auto& momentum = fittedParameters.momentum();
   const double fit_eta = eta(momentum);
+  const double fit_theta = theta(momentum);
   const double fit_pT = perp(momentum);
 
   PlotHelpers::fillProf(trackSummaryPlotCache.nStates_vs_eta, fit_eta, nStates);
@@ -112,4 +156,18 @@ void ActsExamples::TrackSummaryPlotTool::fill(
   PlotHelpers::fillProf(trackSummaryPlotCache.nHoles_vs_pt, fit_pT, nHoles);
   PlotHelpers::fillProf(trackSummaryPlotCache.nSharedHits_vs_pt, fit_pT,
                         nSharedHits);
+  int pdg = std::abs(majorityParticlePdg);
+  if (trackSummaryPlotCache.nMeasurements_vs_pT_costheta.count(pdg) > 0) {
+    PlotHelpers::fillProf2D(
+        trackSummaryPlotCache.nMeasurements_vs_pT_costheta[pdg], fit_pT,
+        std::cos(fit_theta), nMeasurements);
+  }
+  if (trackSummaryPlotCache.nMajorityHits_vs_pT_costheta.count(pdg) > 0) {
+    PlotHelpers::fillProf2D(
+        trackSummaryPlotCache.nMajorityHits_vs_pT_costheta[pdg], fit_pT,
+        std::cos(fit_theta), nMajorityHits);
+    PlotHelpers::fillProf2D(
+        trackSummaryPlotCache.trackPurity_vs_pT_costheta[pdg], fit_pT,
+        std::cos(fit_theta), nMajorityHits * 1.0 / nMeasurements);
+  }
 }

@@ -23,6 +23,7 @@ void ActsExamples::FakeRatePlotTool::book(
     FakeRatePlotTool::FakeRatePlotCache& fakeRatePlotCache) const {
   PlotHelpers::Binning bPt = m_cfg.varBinning.at("Pt");
   PlotHelpers::Binning bEta = m_cfg.varBinning.at("Eta");
+  PlotHelpers::Binning bCostheta = m_cfg.varBinning.at("Costheta");
   PlotHelpers::Binning bPhi = m_cfg.varBinning.at("Phi");
   PlotHelpers::Binning bNum = m_cfg.varBinning.at("Num");
   ACTS_DEBUG("Initialize the histograms for fake rate plots");
@@ -60,6 +61,15 @@ void ActsExamples::FakeRatePlotTool::book(
   // fake rate vs phi
   fakeRatePlotCache.fakeRate_vs_phi = PlotHelpers::bookEff(
       "fakerate_vs_phi", "Tracking fake rate;#phi;Fake rate", bPhi);
+
+  for (const auto& [pdg, ptBin] : m_cfg.ptBinning) {
+    fakeRatePlotCache.fakeRate_vs_pT_costheta[pdg] = PlotHelpers::bookEff(
+        Form("fakerate_%i_vs_pT_costheta", pdg),
+        Form("Tracking fake rate of particle with absolute pdg = %i;Reco p_{T} "
+             "[GeV/c];Reco cos#theta;Fake rate",
+             pdg),
+        ptBin, bCostheta);
+  }
 }
 
 void ActsExamples::FakeRatePlotTool::clear(
@@ -73,6 +83,9 @@ void ActsExamples::FakeRatePlotTool::clear(
   delete fakeRatePlotCache.fakeRate_vs_pT;
   delete fakeRatePlotCache.fakeRate_vs_eta;
   delete fakeRatePlotCache.fakeRate_vs_phi;
+  for (auto& [pdg, fake] : fakeRatePlotCache.fakeRate_vs_pT_costheta) {
+    delete fake;
+  }
 }
 
 void ActsExamples::FakeRatePlotTool::write(
@@ -87,19 +100,30 @@ void ActsExamples::FakeRatePlotTool::write(
   fakeRatePlotCache.fakeRate_vs_pT->Write();
   fakeRatePlotCache.fakeRate_vs_eta->Write();
   fakeRatePlotCache.fakeRate_vs_phi->Write();
+  for (const auto& [pdg, fake] : fakeRatePlotCache.fakeRate_vs_pT_costheta) {
+    fake->Write();
+  }
 }
 
 void ActsExamples::FakeRatePlotTool::fill(
     FakeRatePlotTool::FakeRatePlotCache& fakeRatePlotCache,
-    const Acts::BoundTrackParameters& fittedParameters, bool status) const {
+    const Acts::BoundTrackParameters& fittedParameters,
+    const Acts::PdgParticle& majorityParticlePdg, bool status) const {
   const auto& momentum = fittedParameters.momentum();
   const double fit_phi = phi(momentum);
   const double fit_eta = eta(momentum);
+  const double fit_theta = theta(momentum);
   const double fit_pT = perp(momentum);
 
   PlotHelpers::fillEff(fakeRatePlotCache.fakeRate_vs_pT, fit_pT, status);
   PlotHelpers::fillEff(fakeRatePlotCache.fakeRate_vs_eta, fit_eta, status);
   PlotHelpers::fillEff(fakeRatePlotCache.fakeRate_vs_phi, fit_phi, status);
+  if (m_cfg.ptBinning.count(std::abs(majorityParticlePdg)) > 0) {
+    PlotHelpers::fillEff(
+        fakeRatePlotCache
+            .fakeRate_vs_pT_costheta[std::abs(majorityParticlePdg)],
+        fit_pT, std::cos(fit_theta), status);
+  }
 }
 
 void ActsExamples::FakeRatePlotTool::fill(

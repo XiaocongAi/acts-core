@@ -28,7 +28,11 @@ class EffPlotTool {
     std::map<std::string, PlotHelpers::Binning> varBinning = {
         {"Eta", PlotHelpers::Binning("#eta", 40, -4, 4)},
         {"Phi", PlotHelpers::Binning("#phi", 100, -3.15, 3.15)},
-        {"Pt", PlotHelpers::Binning("pT [GeV/c]", 40, 0, 100)}};
+        {"Pt", PlotHelpers::Binning("pT [GeV/c]", 40, 0, 100)},
+        {"Costheta", PlotHelpers::Binning("cos#theta", 24, -1, 1.4)}};
+    std::map<int, PlotHelpers::Binning> ptBinning = {
+        {211, PlotHelpers::Binning("pT [GeV/c]", 8, 0.05, 0.45)},
+        {13, PlotHelpers::Binning("pT [GeV/c]", 13, 0.5, 1.8)}};
   };
 
   /// @brief Nested Cache struct
@@ -36,6 +40,7 @@ class EffPlotTool {
     TEfficiency* trackEff_vs_pT{nullptr};   ///< Tracking efficiency vs pT
     TEfficiency* trackEff_vs_eta{nullptr};  ///< Tracking efficiency vs eta
     TEfficiency* trackEff_vs_phi{nullptr};  ///< Tracking efficiency vs phi
+    std::map<int, TEfficiency*> trackEff_vs_pT_costheta;
   };
 
   /// Constructor
